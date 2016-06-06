@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tcp="http://www.mulesoft.org/schema/mule/tcp" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/tcp http://www.mulesoft.org/schema/mule/tcp/current/mule-tcp.xsd">
+    <http:request-config name="HTTP_Request_BE_SS" host="${http.segmentandcancelsegmentsell.host}" port="${http.segmentandcancelsegmentsell.port}" doc:name="HTTP Request Configuration" basePath="fz" connectionIdleTimeout="180000" responseTimeout="180000"/>
+     <http:listener-config name="HTTP_FZ_FE" host="${http.gateway.host}" port="${http.gateway.port}" basePath="axis2/services" doc:name="HTTP Listener Configuration" connectionIdleTimeout="180000"/>
+	<context:property-placeholder  location="${fz.env}.fz.services.properties"/>
+    <http:request-config name="HTTP_Request_BE_FA" host="${http.availabilityservice.host}" port="${http.availabilityservice.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_RB" host="${http.retrievebooking.host}" port="${http.retrievebooking.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_Ping" host="${http.pingservice.host}" port="${http.pingservice.port}" doc:name="HTTP Request Configuration" basePath="fz" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_CreateB" host="${http.createbooking.host}" port="${http.createbooking.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_MB" host="${http.modifybooking.host}" port="${http.modifybooking.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_CancelB" host="${http.cancelbooking.host}" port="${http.cancelbooking.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_Pricing" host="${http.pricingbooking.host}" port="${http.pricingbooking.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <http:request-config name="HTTP_Request_BE_Ticketing" host="${http.ticketing.host}" port="${http.ticketing.port}" basePath="fz" doc:name="HTTP Request Configuration" connectionIdleTimeout="180000" responseTimeout="180000">
+        <tcp:client-socket-properties connectionTimeout="60000"/>
+    </http:request-config>
+    <flow name="fzgatewayFlow">
+        <http:listener config-ref="HTTP_FZ_FE" path="/RESAdapterService" allowedMethods="POST" doc:name="HTTP"/>
+        <set-variable variableName="soapActionFromHeader" value="#[message.inboundProperties['SOAPAction']]" doc:name="get Soap Action"/>
+        <dw:transform-message doc:name="getSoapBody">
+            <dw:input-payload doc:sample="empty.xml"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+ 
+
+
+---
+payload.Envelope.Body]]></dw:set-payload>
+
+        </dw:transform-message>
+        <logger message="The SOAP Action is  #[flowVars.soapActionFromHeader]" level="INFO" doc:name="Logger"/>
+        <choice doc:name="Operation Router">
+            <when expression="#[flowVars.soapActionFromHeader contains 'getAvailability']">
+                <http:request config-ref="HTTP_Request_BE_FA" path="/availabilityservice" method="POST" doc:name="Flight Availability Service"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader contains 'doSegmentSell']">
+                <http:request config-ref="HTTP_Request_BE_SS" path="/segmentsellservice" method="POST" doc:name="Segment Sell Service"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'cancelSegmentSell']">
+                <http:request config-ref="HTTP_Request_BE_SS" path="/cancelsegmentsellservice" method="POST" doc:name="Cancel Sell Service"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'retrieveBooking']">
+                <http:request config-ref="HTTP_Request_BE_RB" path="/retrievebooking" method="POST" doc:name="Retrieve Booking"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'ping']">
+                <http:request config-ref="HTTP_Request_BE_Ping" path="/ping" method="POST" doc:name="Ping Service"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'book']">
+                <http:request config-ref="HTTP_Request_BE_CreateB" path="/createbooking" method="POST" doc:name="CreateBooking"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'modifyBooking']">
+                <http:request config-ref="HTTP_Request_BE_MB" path="/modifybooking" method="POST" doc:name="modifyBooking"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'cancelBooking']">
+                <http:request config-ref="HTTP_Request_BE_CancelB" path="/cancelbooking" method="POST" doc:name="CancelBooking"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'pricing']">
+                <http:request config-ref="HTTP_Request_BE_Pricing" path="/pricing" method="POST" doc:name="Pricing"/>
+            </when>
+            <when expression="#[flowVars.soapActionFromHeader  contains 'Ticketing']">
+                <http:request config-ref="HTTP_Request_BE_Ticketing" path="/ticketing" method="POST" doc:name="Ticketing"/>
+            </when>
+            <otherwise>
+                <set-payload value="#[payload]" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="string.dwl"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace soapenv http://schemas.xmlsoap.org/soap/envelope/
+---
+{
+soapenv#Envelope: {
+	soapenv#Header : null,
+   	soapenv#Body :	payload
+}
+}
+]]></dw:set-payload>
+        </dw:transform-message>
+        <set-payload value="#[payload]" encoding="UTF-8" mimeType="text/xml" doc:name="Set PayloadTextXML"/>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace soapenv http://schemas.xmlsoap.org/soap/envelope/
+---
+{
+soapenv#Envelope: {
+	soapenv#Header : null,
+   	soapenv#Body :	{
+   		soapenv#Fault : {
+   			faultcode : "Gateway unable to reach any backend service. please check the reason below",
+			faultstring : payload,
+   			faultactor : "Mule MyidGateway"
+   				
+   			
+   		}
+   	}
+}
+}
+]]></dw:set-payload>
+            </dw:transform-message>
+        </catch-exception-strategy>
+
+    </flow>
+</mule>
