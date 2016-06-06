@@ -105,29 +105,7 @@ soapenv#Envelope: {
 ]]></dw:set-payload>
         </dw:transform-message>
         <set-payload value="#[payload]" encoding="UTF-8" mimeType="text/xml" doc:name="Set PayloadTextXML"/>
-        <catch-exception-strategy doc:name="Catch Exception Strategy">
-            <dw:transform-message doc:name="Transform Message">
-                <dw:set-payload><![CDATA[%dw 1.0
-%output application/xml
-%namespace soapenv http://schemas.xmlsoap.org/soap/envelope/
----
-{
-soapenv#Envelope: {
-	soapenv#Header : null,
-   	soapenv#Body :	{
-   		soapenv#Fault : {
-   			faultcode : "Gateway unable to reach any backend service. please check the reason below",
-			faultstring : payload,
-   			faultactor : "Mule MyidGateway"
-   				
-   			
-   		}
-   	}
-}
-}
-]]></dw:set-payload>
-            </dw:transform-message>
-        </catch-exception-strategy>
+       
 
     </flow>
 </mule>
